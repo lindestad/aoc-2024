@@ -14,6 +14,12 @@ pub fn is_safe(report: &[i32]) -> bool {
 
 pub fn is_safe_with_dampening(report: &[i32]) -> bool {
     // Dampening means that a single level causing fault can be removed, yielding safe report
+
+    // Check if report is empty -> trivially safe
+    if report.is_empty() {
+        return true;
+    }
+
     let result = (0..report.len()).any(|i| {
         let mut report = report.to_vec();
         report.remove(i);

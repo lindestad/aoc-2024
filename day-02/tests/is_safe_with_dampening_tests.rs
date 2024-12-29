@@ -44,7 +44,7 @@ fn test_single_level_report() {
 
 #[test]
 fn test_unsafe_two_level_report_fixable() {
-    let report = vec![5, 15, 10];
+    let report = vec![5, 15, 8];
     assert!(is_safe_with_dampening(&report)); // Remove "15" to make it safe
 }
 
