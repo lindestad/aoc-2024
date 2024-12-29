@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fs;
 
 fn main() {
@@ -34,5 +35,26 @@ fn main() {
         .map(|(left, right)| (left - right).abs())
         .sum();
 
+    println!("Day 01: Part one");
     println!("Total distance: {}", total_distance);
+
+    // Part two
+    // lists are already sorted, but this does not impact the solution
+    let mut counts = HashMap::new();
+    // Iterate over the right list and count the number of occurrences, increment key: value in
+    // the counts HashMap, if the key does not exist, insert it with a value of 0
+    for &num in right_list.iter() {
+        *counts.entry(num).or_insert(0) += 1;
+    }
+
+    let mut similarity_score = 0;
+    for &num in left_list.iter() {
+        if let Some(&count) = counts.get(&num) {
+            // counts.get(&num) returns Option<&i32>, Some(count) returns &i32
+            similarity_score += num * count;
+        }
+    }
+
+    println!("Day 01: Part two");
+    println!("Similarity score: {}", similarity_score);
 }
