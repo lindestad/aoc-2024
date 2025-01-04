@@ -1,5 +1,4 @@
-use num_rational::Ratio;
-use std::collections::HashMap;
+use std::collections::HashSet;
 
 pub fn parse_input(input: &str) -> (Vec<i128>, Vec<Vec<i128>>) {
     let lines = input.lines();
@@ -24,44 +23,25 @@ pub fn parse_input(input: &str) -> (Vec<i128>, Vec<Vec<i128>>) {
     return (keys, values);
 }
 
-pub fn can_make_sum_memoized(
-    target: Ratio<i128>,
-    values: &[Ratio<i128>],
-    memo: &mut HashMap<(Ratio<i128>, Vec<Ratio<i128>>), bool>,
-) -> bool {
-    // Check the memoization cache
-    if let Some(&result) = memo.get(&(target.clone(), values.to_vec())) {
-        return result;
-    }
-
-    // Base cases
+pub fn can_make_target(target: i128, values: &[i128]) -> bool {
     if values.is_empty() {
         return false;
     }
     if values.len() == 1 {
-        let result = values[0] == target;
-        memo.insert((target.clone(), values.to_vec()), result);
-        return result;
+        return values[0] == target;
     }
 
-    let (first, rest) = values.split_first().unwrap();
+    let mut current_results = HashSet::new();
+    current_results.insert(values[0]);
 
-    // Recursive cases: Try all operations
-    let mut result = can_make_sum_memoized(target.clone() - first.clone(), rest, memo)
-        || can_make_sum_memoized(target.clone() + first.clone(), rest, memo)
-        || can_make_sum_memoized(target.clone() * first.clone(), rest, memo);
-
-    // Safe division: Avoid division by zero
-    if *first != Ratio::new(0, 1) {
-        result = result || can_make_sum_memoized(target.clone() / first.clone(), rest, memo);
+    for &val in &values[1..] {
+        let mut next_results = HashSet::new();
+        for &r in &current_results {
+            // Only + and *
+            next_results.insert(r.saturating_add(val));
+            next_results.insert(r.saturating_mul(val));
+        }
+        current_results = next_results;
     }
-
-    // Store the result in the memoization cache
-    memo.insert((target.clone(), values.to_vec()), result);
-    result
-}
-
-pub fn can_make_sum(target: Ratio<i128>, values: Vec<Ratio<i128>>) -> bool {
-    let mut memo = HashMap::new();
-    can_make_sum_memoized(target, &values, &mut memo)
+    return current_results.contains(&target);
 }

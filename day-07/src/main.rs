@@ -1,6 +1,5 @@
 use day_07::*;
 use indicatif::{ProgressBar, ProgressStyle};
-use num_rational::Ratio;
 use std::fs;
 use std::thread;
 
@@ -32,10 +31,7 @@ fn main() {
         let handle = thread::spawn(move || {
             let mut local_sum = 0;
             for (key, values_vec) in chunk_keys.iter().zip(chunk_values.iter()) {
-                let target = Ratio::new(*key, 1);
-                let values: Vec<Ratio<i128>> =
-                    values_vec.iter().map(|&x| Ratio::new(x, 1)).collect();
-                if can_make_sum(target, values.clone()) {
+                if can_make_target(*key, &values_vec) {
                     local_sum += key;
                 }
                 pb_clone.inc(1); // Update the progress bar
