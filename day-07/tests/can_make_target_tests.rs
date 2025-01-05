@@ -1,5 +1,4 @@
 use day_07::can_make_target;
-use std::collections::HashSet;
 
 #[test]
 fn test_empty_values() {
