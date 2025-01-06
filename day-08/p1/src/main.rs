@@ -8,5 +8,4 @@ fn main() {
     let sum = unique_antennas.len();
     println!("Day 08, Part 1");
     println!("Unique antennas: {}", sum);
-    println!("width: {:?}, length: {:?}", grid[0].len(), grid.len());
 }
