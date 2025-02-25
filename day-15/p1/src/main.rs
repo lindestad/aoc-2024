@@ -7,5 +7,9 @@ fn main() {
     let moves: Vec<char>;
     (warehouse_map, moves) = parse_input(&input);
 
-    print_map(warehouse_map);
+    let result_map = solve_map(warehouse_map, moves);
+    let gps_value = gps(result_map);
+
+    println!("Day 15, Part 1.");
+    println!("Sum of all boxes' GPS coordinates: {gps_value}.");
 }
