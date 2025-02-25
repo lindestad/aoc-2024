@@ -35,11 +35,11 @@ pub fn parse_input(input: &str) -> (Vec<Vec<char>>, Vec<char>) {
 }
 
 pub fn print_map(map: Vec<Vec<char>>) {
-    println!("");
+    println!(" ");
     for line in map.iter() {
         println!("{}", line.iter().collect::<String>());
     }
-    println!("");
+    println!(" ");
 }
 
 pub fn solve_map(map: Vec<Vec<char>>, moves: Vec<char>) -> Vec<Vec<char>> {
@@ -71,23 +71,22 @@ pub fn solve_map(map: Vec<Vec<char>>, moves: Vec<char>) -> Vec<Vec<char>> {
                     match map[robot_pos.1][test_pos] {
                         '#' => {
                             // Step back one step
-                            stack -= 1;
                             test_pos += 1;
                             break;
                         }
                         '.' => {
                             break;
                         }
-                        _ => {
+                        'O' => {
+                            map[robot_pos.1][test_pos] = '.';
                             stack += 1;
                             test_pos -= 1;
                         }
+                        _ => {
+                            panic!("Invalid character in map!");
+                        }
                     }
                 }
-                // while !matches!(map[robot_pos.1][test_pos], '#' | '.') {
-                //     stack += 1;
-                //     test_pos -= 1;
-                // }
                 for _ in 0..stack {
                     map[robot_pos.1][test_pos] = 'O';
                     test_pos += 1;
@@ -95,13 +94,91 @@ pub fn solve_map(map: Vec<Vec<char>>, moves: Vec<char>) -> Vec<Vec<char>> {
                 robot_pos.0 = test_pos; // Move the robot
             }
             '^' => {
-                todo!();
+                let mut stack: usize = 0;
+                let mut test_pos: usize = robot_pos.1 - 1;
+                loop {
+                    match map[test_pos][robot_pos.0] {
+                        '#' => {
+                            // Step back one step
+                            test_pos += 1;
+                            break;
+                        }
+                        '.' => {
+                            break;
+                        }
+                        'O' => {
+                            map[test_pos][robot_pos.0] = '.';
+                            stack += 1;
+                            test_pos -= 1;
+                        }
+                        _ => {
+                            panic!("Invalid character in map!");
+                        }
+                    }
+                }
+                for _ in 0..stack {
+                    map[test_pos][robot_pos.0] = 'O';
+                    test_pos += 1;
+                }
+                robot_pos.1 = test_pos; // Move the robot
             }
             '>' => {
-                todo!();
+                let mut stack: usize = 0;
+                let mut test_pos: usize = robot_pos.0 + 1;
+                loop {
+                    match map[robot_pos.1][test_pos] {
+                        '#' => {
+                            // Step back one step
+                            test_pos -= 1;
+                            break;
+                        }
+                        '.' => {
+                            break;
+                        }
+                        'O' => {
+                            map[robot_pos.1][test_pos] = '.';
+                            stack += 1;
+                            test_pos += 1;
+                        }
+                        _ => {
+                            panic!("Invalid character in map!");
+                        }
+                    }
+                }
+                for _ in 0..stack {
+                    map[robot_pos.1][test_pos] = 'O';
+                    test_pos -= 1;
+                }
+                robot_pos.0 = test_pos; // Move the robot
             }
             'v' => {
-                todo!();
+                let mut stack: usize = 0;
+                let mut test_pos: usize = robot_pos.1 + 1;
+                loop {
+                    match map[test_pos][robot_pos.0] {
+                        '#' => {
+                            // Step back one step
+                            test_pos -= 1;
+                            break;
+                        }
+                        '.' => {
+                            break;
+                        }
+                        'O' => {
+                            map[test_pos][robot_pos.0] = '.';
+                            stack += 1;
+                            test_pos += 1;
+                        }
+                        _ => {
+                            panic!("Invalid character in map!");
+                        }
+                    }
+                }
+                for _ in 0..stack {
+                    map[test_pos][robot_pos.0] = 'O';
+                    test_pos -= 1;
+                }
+                robot_pos.1 = test_pos; // Move the robot
             }
             _ => {
                 panic!("Invalid move character in move input: '{mv}' was passed.")
@@ -312,6 +389,40 @@ pub mod tests {
         let result = solve_map(map, moves);
         let solution = parse_input(solution).0;
 
+        println!("Input map:");
+        print_map(parse_input(input).0);
+        println!("Result map:");
+        print_map(result.clone());
+        println!("Solution map:");
+        print_map(solution.clone());
+        assert_eq!(result, solution);
+    }
+
+    #[test]
+    pub fn test_many_complex_moves_right() {
+        let input = r"
+############
+#O@.O..O.O.#
+############
+
+>>>>>>>>>>>>>>>>
+        ";
+
+        let solution = r"
+############
+#O.....@OOO#
+############
+        ";
+
+        let map;
+        let moves;
+        (map, moves) = parse_input(input);
+
+        let result = solve_map(map, moves);
+        let solution = parse_input(solution).0;
+
+        println!("Input map:");
+        print_map(parse_input(input).0);
         println!("Result map:");
         print_map(result.clone());
         println!("Solution map:");
