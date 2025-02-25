@@ -190,6 +190,20 @@ pub fn solve_map(map: Vec<Vec<char>>, moves: Vec<char>) -> Vec<Vec<char>> {
     map
 }
 
+pub fn gps(map: Vec<Vec<char>>) -> i64 {
+    let mut answer = 0;
+
+    for (y, line) in map.iter().enumerate() {
+        for (x, &c) in line.iter().enumerate() {
+            if c == 'O' {
+                answer += (100 * y) + x;
+            }
+        }
+    }
+
+    answer as i64
+}
+
 #[cfg(test)]
 pub mod tests {
     use super::*;
@@ -521,5 +535,18 @@ v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^
         println!("Solution map:");
         print_map(solution.clone());
         assert_eq!(result, solution);
+    }
+
+    #[test]
+    pub fn test_gps() {
+        let input = r"
+#######
+#...O..
+#......
+        ";
+        let map = parse_input(input).0;
+
+        let result = gps(map);
+        assert_eq!(result, 104);
     }
 }
