@@ -79,11 +79,11 @@ fn blocked_internal(
             '.' => false,
             ']' => {
                 assert!(map[pos.1][pos.0 - 2] == '[');
-                blocked_internal(map, (pos.0 - 2, pos.1), direction, depth + 1) // Check neighbor
+                blocked_internal(map, (pos.0 - 1, pos.1), direction, depth + 1) // Check neighbor
             }
             '[' => {
                 assert!(map[pos.1][pos.0] == ']');
-                blocked_internal(map, (pos.0 - 2, pos.1), direction, depth + 1) // Check neighbor
+                blocked_internal(map, (pos.0 - 1, pos.1), direction, depth + 1) // Check neighbor
             }
 
             _ => panic!("Invalid character found: {}", map[pos.1][pos.0 - 1]),
@@ -126,12 +126,12 @@ fn blocked_internal(
                 '[' => {
                     assert!(map[pos.1][pos.0 + 2] == ']');
                     // Check neighbor
-                    blocked_internal(map, (pos.0 + 2, pos.1), direction, depth + 1)
+                    blocked_internal(map, (pos.0 + 1, pos.1), direction, depth + 1)
                 }
                 ']' => {
                     assert!(map[pos.1][pos.0] == '[');
                     // Check neighbor
-                    blocked_internal(map, (pos.0 + 2, pos.1), direction, depth + 1)
+                    blocked_internal(map, (pos.0 + 1, pos.1), direction, depth + 1)
                 }
 
                 _ => panic!("Invalid character found: {}", map[pos.1][pos.0 + 1]),
@@ -225,8 +225,10 @@ fn find_connected_boxes(
             '[' => {
                 assert!(map[pos.1][pos.0] == ']');
 
+                box_stack.insert(((pos.0 - 1, pos.1), (pos.0, pos.1)));
+
                 // Just use code from left side:
-                find_connected_boxes(box_stack, map, direction, (pos.0 - 1, pos.1))
+                find_connected_boxes(box_stack, map, direction, (pos.0 - 2, pos.1))
             }
 
             _ => (),
@@ -491,6 +493,25 @@ pub mod tests {
 
     #[test]
     #[allow(clippy::bool_assert_comparison)] // More idiomatic in this case
+    fn test_check_blocked_left5() {
+        let input = r"
+##############
+##..........##
+##.[][][]...##
+##..........##
+##############
+        ";
+        let map = get_map(input);
+        let direction = '<';
+        let start_positions = [(6, 2), (7, 2)];
+        for rpos in start_positions {
+            let result = blocked(&map, rpos, direction);
+            assert_eq!(result, false);
+        }
+    }
+
+    #[test]
+    #[allow(clippy::bool_assert_comparison)] // More idiomatic in this case
     fn test_check_blocked_right1() {
         let input = r"
 ##############
@@ -553,6 +574,25 @@ pub mod tests {
 
         let result = blocked(&map, rpos, moves[0]);
         assert_eq!(result, true);
+    }
+
+    #[test]
+    #[allow(clippy::bool_assert_comparison)] // More idiomatic in this case
+    fn test_check_blocked_right4() {
+        let input = r"
+##############
+##..........##
+##...[][][].##
+##..........##
+##############
+        ";
+        let map = get_map(input);
+        let direction = '>';
+        let start_positions = [(5, 2), (6, 2)];
+        for rpos in start_positions {
+            let result = blocked(&map, rpos, direction);
+            assert_eq!(result, false);
+        }
     }
 
     #[test]
@@ -1062,6 +1102,256 @@ v
                 }
                 assert_eq!(result, expected_map);
             }
+        }
+    }
+
+    #[test]
+    fn test_single_move2() {
+        let input = r"
+######
+##[]##
+######
+        ";
+        let map = get_map(input);
+        let answers = [
+            r"
+######
+##[]##
+######
+        ",
+            r"
+######
+##[]##
+######
+        ",
+            r"
+######
+##[]##
+######
+        ",
+            r"
+######
+##[]##
+######
+        ",
+        ];
+        let directions = vec!['<', '^', '>', 'v'];
+        let start_positions = [(2, 1), (3, 1)];
+        for pos in start_positions {
+            for (answer, direction) in answers.iter().zip(directions.clone()) {
+                let expected_map = get_map(answer);
+                let mut result = map.clone();
+                single_move(&mut result, pos, direction);
+                if result.clone() != expected_map {
+                    println!("Correct: ");
+                    print_map(&expected_map);
+                    println!("\nActual:");
+                    print_map(&result.clone());
+                }
+                assert_eq!(result, expected_map);
+            }
+        }
+    }
+
+    #[test]
+    fn test_single_move_left1() {
+        let input = r"
+##############
+##..........##
+##..[][]....##
+##..........##
+##############
+        ";
+        let map = get_map(input);
+        let answer = r"
+##############
+##..........##
+##.[][].....##
+##..........##
+##############
+        ";
+        let direction = '<';
+        let start_positions = [(6, 2), (7, 2)];
+        for pos in start_positions {
+            let expected_map = get_map(answer);
+            let mut result = map.clone();
+            single_move(&mut result, pos, direction);
+            if result.clone() != expected_map {
+                println!("Correct: ");
+                print_map(&expected_map);
+                println!("\nActual:");
+                print_map(&result.clone());
+            }
+            assert_eq!(result, expected_map);
+        }
+    }
+
+    #[test]
+    fn test_single_move_left2() {
+        let input = r"
+##############
+##..........##
+##[][][]....##
+##..........##
+##############
+        ";
+        let map = get_map(input);
+        let answer = r"
+##############
+##..........##
+##[][][]....##
+##..........##
+##############
+        ";
+        let direction = '<';
+        let start_positions = [(6, 2), (7, 2)];
+        for pos in start_positions {
+            let expected_map = get_map(answer);
+            let mut result = map.clone();
+            single_move(&mut result, pos, direction);
+            if result.clone() != expected_map {
+                println!("Correct: ");
+                print_map(&expected_map);
+                println!("\nActual:");
+                print_map(&result.clone());
+            }
+            assert_eq!(result, expected_map);
+        }
+    }
+
+    #[test]
+    fn test_single_move_left3() {
+        let input = r"
+##############
+##..........##
+##.[][][]...##
+##..........##
+##############
+        ";
+        let map = get_map(input);
+        let answer = r"
+##############
+##..........##
+##[][][]....##
+##..........##
+##############
+        ";
+        let direction = '<';
+        let start_positions = [(7, 2), (8, 2)];
+        for pos in start_positions {
+            let expected_map = get_map(answer);
+            let mut result = map.clone();
+            single_move(&mut result, pos, direction);
+            if result.clone() != expected_map {
+                print_map(&map);
+                println!("{}", map[pos.1][pos.0]);
+                println!("Correct: ");
+                print_map(&expected_map);
+                println!("\nActual:");
+                print_map(&result.clone());
+            }
+            assert_eq!(result, expected_map);
+        }
+    }
+
+    #[test]
+    fn test_single_move_right1() {
+        let input = r"
+##############
+##..........##
+##....[][]..##
+##..........##
+##############
+        ";
+        let map = get_map(input);
+        let answer = r"
+##############
+##..........##
+##.....[][].##
+##..........##
+##############
+        ";
+        let direction = '>';
+        let start_positions = [(6, 2), (7, 2)];
+        for pos in start_positions {
+            let expected_map = get_map(answer);
+            let mut result = map.clone();
+            single_move(&mut result, pos, direction);
+            if result.clone() != expected_map {
+                println!("Correct: ");
+                print_map(&expected_map);
+                println!("\nActual:");
+                print_map(&result.clone());
+            }
+            assert_eq!(result, expected_map);
+        }
+    }
+
+    #[test]
+    fn test_single_move_right2() {
+        let input = r"
+##############
+##..........##
+##....[][][]##
+##..........##
+##############
+        ";
+        let map = get_map(input);
+        let answer = r"
+##############
+##..........##
+##....[][][]##
+##..........##
+##############
+        ";
+        let direction = '>';
+        let start_positions = [(6, 2), (7, 2)];
+        for pos in start_positions {
+            let expected_map = get_map(answer);
+            let mut result = map.clone();
+            single_move(&mut result, pos, direction);
+            if result.clone() != expected_map {
+                println!("Correct: ");
+                print_map(&expected_map);
+                println!("\nActual:");
+                print_map(&result.clone());
+            }
+            assert_eq!(result, expected_map);
+        }
+    }
+
+    #[test]
+    fn test_single_move_right3() {
+        let input = r"
+##############
+##..........##
+##...[][][].##
+##..........##
+##############
+        ";
+        let map = get_map(input);
+        let answer = r"
+##############
+##..........##
+##....[][][]##
+##..........##
+##############
+        ";
+        let direction = '>';
+        let start_positions = [(5, 2), (6, 2)];
+        for pos in start_positions {
+            let expected_map = get_map(answer);
+            let mut result = map.clone();
+            single_move(&mut result, pos, direction);
+            if result.clone() != expected_map {
+                print_map(&map);
+                println!("{}", map[pos.1][pos.0]);
+                println!("Correct: ");
+                print_map(&expected_map);
+                println!("\nActual:");
+                print_map(&result.clone());
+            }
+            assert_eq!(result, expected_map);
         }
     }
 }
