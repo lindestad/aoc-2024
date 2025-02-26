@@ -200,6 +200,7 @@ fn pos_at_direction(pos: (usize, usize), direction: char) -> (usize, usize) {
     }
 }
 
+#[allow(clippy::type_complexity)]
 fn find_connected_boxes(
     box_stack: &mut HashSet<((usize, usize), (usize, usize))>,
     map: &[Vec<char>],
@@ -243,6 +244,8 @@ fn find_connected_boxes(
                     // 1: .[].  | 2: .[].  | 3: .[].  | 4: .[].  | 5: .[].
                     //     ^          ^          ^          ^          ^
 
+                    assert!(map[pos.1][pos.0 + 1] == ']');
+                    // Try the default window above (starting one column left)
                     let above: String = [
                         map[pos.1 - 1][pos.0 - 1],
                         map[pos.1 - 1][pos.0],
@@ -383,7 +386,12 @@ fn single_move(map: &mut Vec<Vec<char>>, pos: (usize, usize), direction: char) -
     }
 
     let mut box_set: HashSet<((usize, usize), (usize, usize))> = HashSet::new(); // Vec<(Position of '[', Position of ']')>
-    find_connected_boxes(&mut box_set, map, direction, pos);
+    find_connected_boxes(
+        &mut box_set,
+        map,
+        direction,
+        pos_at_direction(pos, direction),
+    );
 
     // Clear the relevant boxes
     for bbox in box_set.iter() {
@@ -1081,48 +1089,69 @@ v
 ##############
         ";
         let map = get_map(input);
-        let answers = [
-            r"
+        print_map(&map);
+        let tests = vec![
+            // For a left push, the robot must be immediately to the right of the box.
+            (
+                '<',
+                vec![(8, 2)], // starting at (8,2) so that pos_at_direction((8,2), '<') is (7,2)
+                r"
 ##############
 ##..........##
 ##...[].....##
 ##..........##
 ##############
-        ",
-            r"
+                ",
+            ),
+            // For an upward push, the robot must be immediately below the box.
+            (
+                '^',
+                vec![(6, 3), (7, 3)], // try both columns in case the box was started from its left or right cell
+                r"
 ##############
 ##....[]....##
 ##..........##
 ##..........##
 ##############
-        ",
-            r"
+                ",
+            ),
+            // For a right push, the robot must be immediately to the left of the box.
+            (
+                '>',
+                vec![(5, 2)], // so that pos_at_direction((5,2), '>') is (6,2)
+                r"
 ##############
 ##..........##
 ##.....[]...##
 ##..........##
 ##############
-        ",
-            r"
+                ",
+            ),
+            // For a downward push, the robot must be immediately above the box.
+            (
+                'v',
+                vec![(6, 1), (7, 1)], // try both positions
+                r"
 ##############
 ##..........##
 ##..........##
 ##....[]....##
 ##############
-        ",
+                ",
+            ),
         ];
-        let directions = vec!['<', '^', '>', 'v'];
-        let start_positions = [(6, 2), (7, 2)];
-        for pos in start_positions {
-            for (answer, direction) in answers.iter().zip(directions.clone()) {
-                let expected_map = get_map(answer);
+        for (direction, start_positions, expected_str) in tests {
+            let expected_map = get_map(expected_str);
+            for pos in start_positions {
                 let mut result = map.clone();
+                println!("ran");
+                print_map(&map);
                 single_move(&mut result, pos, direction);
-                if result.clone() != expected_map {
-                    println!("Correct: ");
+                if result != expected_map {
+                    println!("Direction '{}' starting at {:?} produced:", direction, pos);
+                    print_map(&result);
+                    println!("Expected:");
                     print_map(&expected_map);
-                    println!("\nActual:");
-                    print_map(&result.clone());
                 }
                 assert_eq!(result, expected_map);
             }
@@ -1195,17 +1224,16 @@ v
 ##############
         ";
         let direction = '<';
-        let start_positions = [(6, 2), (7, 2)];
-        for pos in start_positions {
-            let expected_map = get_map(answer);
-            let mut result = map.clone();
-            single_move(&mut result, pos, direction);
-            if result.clone() != expected_map {
-                println!("Correct: ");
-                print_map(&expected_map);
-                println!("\nActual:");
-                print_map(&result.clone());
-            }
+        let start_pos = (8, 2);
+        let expected_map = get_map(answer);
+        let mut result = map.clone();
+        single_move(&mut result, start_pos, direction);
+        if result.clone() != expected_map {
+            println!("Correct: ");
+            print_map(&expected_map);
+            println!("\nActual:");
+            print_map(&result.clone());
+
             assert_eq!(result, expected_map);
         }
     }
@@ -1228,7 +1256,7 @@ v
 ##############
         ";
         let direction = '<';
-        let start_positions = [(6, 2), (7, 2)];
+        let start_positions = [(8, 2)];
         for pos in start_positions {
             let expected_map = get_map(answer);
             let mut result = map.clone();
@@ -1261,7 +1289,7 @@ v
 ##############
         ";
         let direction = '<';
-        let start_positions = [(7, 2), (8, 2)];
+        let start_positions = [(9, 2)];
         for pos in start_positions {
             let expected_map = get_map(answer);
             let mut result = map.clone();
@@ -1296,7 +1324,7 @@ v
 ##############
         ";
         let direction = '>';
-        let start_positions = [(6, 2), (7, 2)];
+        let start_positions = [(5, 2)];
         for pos in start_positions {
             let expected_map = get_map(answer);
             let mut result = map.clone();
@@ -1329,7 +1357,7 @@ v
 ##############
         ";
         let direction = '>';
-        let start_positions = [(6, 2), (7, 2)];
+        let start_positions = [(5, 2)];
         for pos in start_positions {
             let expected_map = get_map(answer);
             let mut result = map.clone();
@@ -1362,7 +1390,7 @@ v
 ##############
         ";
         let direction = '>';
-        let start_positions = [(5, 2), (6, 2)];
+        let start_positions = [(4, 2)];
         for pos in start_positions {
             let expected_map = get_map(answer);
             let mut result = map.clone();
@@ -1399,7 +1427,7 @@ v
 ##############
         ";
         let direction = '^';
-        let start_positions = [(6, 3), (7, 3)];
+        let start_positions = [(6, 4), (7, 4)];
         for pos in start_positions {
             let expected_map = get_map(answer);
             let mut result = map.clone();
@@ -1434,7 +1462,7 @@ v
 ##############
         ";
         let direction = '^';
-        let start_positions = [(6, 3), (7, 3)];
+        let start_positions = [(6, 4), (7, 4)];
         for pos in start_positions {
             let expected_map = get_map(answer);
             let mut result = map.clone();
@@ -1469,7 +1497,7 @@ v
 ##############
         ";
         let direction = '^';
-        let start_positions = [(6, 3), (7, 3)];
+        let start_positions = [(6, 4), (7, 4)];
         for pos in start_positions {
             let expected_map = get_map(answer);
             let mut result = map.clone();
@@ -1504,7 +1532,7 @@ v
 ##############
         ";
         let direction = '^';
-        let start_positions = [(6, 3), (7, 3)];
+        let start_positions = [(6, 4), (7, 4)];
         for pos in start_positions {
             let expected_map = get_map(answer);
             let mut result = map.clone();
@@ -1541,7 +1569,7 @@ v
 ##############
         ";
         let direction = '^';
-        let start_positions = [(6, 4), (7, 4)];
+        let start_positions = [(6, 5), (7, 5)];
         for pos in start_positions {
             let expected_map = get_map(answer);
             let mut result = map.clone();
@@ -1578,7 +1606,7 @@ v
 ##############
         ";
         let direction = '^';
-        let start_positions = [(6, 4), (7, 4)];
+        let start_positions = [(6, 5), (7, 5)];
         for pos in start_positions {
             let expected_map = get_map(answer);
             let mut result = map.clone();
@@ -1606,7 +1634,7 @@ v
 
 <vv<<^^<<^^
         ";
-        let map = expand_map(&get_map(&input));
+        let map = expand_map(&get_map(input));
         let moves = get_moves(input);
         let result = solve_maze(&map, moves);
 
@@ -1616,6 +1644,40 @@ v
 ##...@.[]...##
 ##....[]....##
 ##..........##
+##..........##
+##############
+        ";
+        let solution = get_map(solution);
+        println!("Result:");
+        print_map(&result);
+        println!("\nCorrect:");
+        print_map(&solution);
+        assert_eq!(result, solution);
+    }
+
+    #[test]
+    fn test_solve2() {
+        let input = r"
+#######
+#...#.#
+#.....#
+#..OO@#
+#..O..#
+#.....#
+#######
+
+<
+        ";
+        let map = expand_map(&get_map(input));
+        let moves = get_moves(input);
+        let result = solve_maze(&map, moves);
+
+        let solution = r"
+##############
+##......##..##
+##..........##
+##...[][]@..##
+##....[]....##
 ##..........##
 ##############
         ";
