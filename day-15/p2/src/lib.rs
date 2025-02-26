@@ -141,7 +141,35 @@ fn blocked_internal(
             }
         }
         'v' => {
-            todo!();
+            match map[pos.1][pos.0] {
+                '[' => {
+                    assert!(map[pos.1][pos.0 + 1] == ']');
+                    // Check space below box
+                    blocked_internal(map, (pos.0, pos.1 + 1), direction, depth + 1)
+                        || blocked_internal(map, (pos.0 + 1, pos.1 + 1), direction, depth + 1)
+                }
+                ']' => {
+                    assert!(map[pos.1][pos.0 - 1] == '[');
+                    // Check space below box
+                    blocked_internal(map, (pos.0, pos.1 + 1), direction, depth + 1)
+                        || blocked_internal(map, (pos.0 - 1, pos.1 + 1), direction, depth + 1)
+                }
+                '.' | '@' => {
+                    if depth == 0 {
+                        blocked_internal(map, (pos.0, pos.1 + 1), direction, depth + 1)
+                    } else {
+                        false
+                    }
+                }
+                '#' => {
+                    if depth == 0 {
+                        panic!("Trying to check from boundary and down, is this intentional? Passed position {:?}, direction '{}'.", pos, direction);
+                    } else {
+                        true
+                    }
+                }
+                _ => panic!("Invalid character found in map at position {:?}.", pos),
+            }
         }
         _ => {
             panic!("Invalid input direction given: '{direction}', must be one of ['<', '^', '>', 'v'].");
@@ -468,6 +496,160 @@ pub mod tests {
 ##############
 
 ^
+        ";
+        let map = get_map(input);
+        let moves = get_moves(input);
+        let rpos = robot_position(&map);
+
+        let result = blocked(&map, rpos, moves[0]);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    #[allow(clippy::bool_assert_comparison)] // More idiomatic in this case
+    fn test_check_blocked_below1() {
+        let input = r"
+##############
+##......##..##
+##..........##
+##....[][]@.##
+##....[]....##
+##......##..##
+##############
+
+v
+        ";
+        let map = get_map(input);
+        let moves = get_moves(input);
+        let rpos = robot_position(&map);
+
+        let result = blocked(&map, rpos, moves[0]);
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    #[allow(clippy::bool_assert_comparison)] // More idiomatic in this case
+    fn test_check_blocked_below2() {
+        let input = r"
+##############
+##......##..##
+##.......[].##
+##....[][]@.##
+##....[].[].##
+##......##..##
+##############
+
+v
+        ";
+        let map = get_map(input);
+        let moves = get_moves(input);
+        let rpos = robot_position(&map);
+
+        let result = blocked(&map, rpos, moves[0]);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    #[allow(clippy::bool_assert_comparison)] // More idiomatic in this case
+    fn test_check_blocked_below3() {
+        let input = r"
+##############
+##......#...##
+##.......[].##
+##....[][]@.##
+##....[].[].##
+##......#...##
+##############
+
+v
+        ";
+        let map = get_map(input);
+        let moves = get_moves(input);
+        let rpos = robot_position(&map);
+
+        let result = blocked(&map, rpos, moves[0]);
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    #[allow(clippy::bool_assert_comparison)] // More idiomatic in this case
+    fn test_check_blocked_below4() {
+        let input = r"
+##############
+##......[]..##
+##.......[].##
+##....[][]@.##
+##....[].[].##
+##......[]..##
+##############
+
+v
+        ";
+        let map = get_map(input);
+        let moves = get_moves(input);
+        let rpos = robot_position(&map);
+
+        let result = blocked(&map, rpos, moves[0]);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    #[allow(clippy::bool_assert_comparison)] // More idiomatic in this case
+    fn test_check_blocked_below5() {
+        let input = r"
+##############
+##......[][]##
+##.......[].##
+##....[][]@.##
+##....[].[].##
+##......[][]##
+##############
+
+v
+        ";
+        let map = get_map(input);
+        let moves = get_moves(input);
+        let rpos = robot_position(&map);
+
+        let result = blocked(&map, rpos, moves[0]);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    #[allow(clippy::bool_assert_comparison)] // More idiomatic in this case
+    fn test_check_blocked_below6() {
+        let input = r"
+##############
+##........[]##
+##.......[].##
+##....[][]@.##
+##....[].[].##
+##........[]##
+##############
+
+v
+        ";
+        let map = get_map(input);
+        let moves = get_moves(input);
+        let rpos = robot_position(&map);
+
+        let result = blocked(&map, rpos, moves[0]);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    #[allow(clippy::bool_assert_comparison)] // More idiomatic in this case
+    fn test_check_blocked_below7() {
+        let input = r"
+##############
+##....[]....##
+##..........##
+##......[]..##
+##.......[].##
+##....[][]@.##
+##############
+
+v
         ";
         let map = get_map(input);
         let moves = get_moves(input);
