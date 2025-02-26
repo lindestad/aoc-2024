@@ -177,7 +177,7 @@ fn blocked_internal(
     }
 }
 
-pub fn robot_position(map: &[Vec<char>]) -> (usize, usize) {
+fn robot_position(map: &[Vec<char>]) -> (usize, usize) {
     let mut robot_pos: Option<(usize, usize)> = None;
 
     // Get robot position
