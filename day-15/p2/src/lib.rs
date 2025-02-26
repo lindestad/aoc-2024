@@ -433,6 +433,20 @@ pub fn solve_maze(map: &Vec<Vec<char>>, moves: Vec<char>) -> Vec<Vec<char>> {
     map
 }
 
+pub fn gps(map: Vec<Vec<char>>) -> i64 {
+    let mut answer = 0;
+
+    for (y, line) in map.iter().enumerate() {
+        for (x, &c) in line.iter().enumerate() {
+            if c == '[' {
+                answer += (100 * y) + x;
+            }
+        }
+    }
+
+    answer as i64
+}
+
 #[cfg(test)]
 pub mod tests {
     use super::*;
