@@ -83,7 +83,7 @@ fn blocked_internal(
             }
             '[' => {
                 panic!(
-                    "Bugged box in map: {}{}",
+                    "Bugged1 box in map: {}{}",
                     map[pos.1][pos.0 - 1],
                     map[pos.1][pos.0]
                 );
@@ -133,7 +133,7 @@ fn blocked_internal(
                 }
                 ']' => {
                     panic!(
-                        "Bugged box in map: {}{}",
+                        "Bugged2 box in map: {}{}",
                         map[pos.1][pos.0 + 1],
                         map[pos.1][pos.0]
                     );
@@ -211,19 +211,27 @@ fn find_connected_boxes(
     direction: char,
     pos: (usize, usize),
 ) {
+    if box_stack.is_empty() {
+        if map[pos.1][pos.0] == '[' && map[pos.1][pos.0 + 1] == ']' {
+            box_stack.insert(((pos.0, pos.1), (pos.0 + 1, pos.1)));
+        } else if map[pos.1][pos.0 - 1] == '[' && map[pos.1][pos.0] == ']' {
+            box_stack.insert(((pos.0 - 1, pos.1), (pos.0, pos.1)));
+        } else {
+            return;
+        }
+    }
     match direction {
         '<' => match map[pos.1][pos.0 - 1] {
             ']' => {
                 assert!(map[pos.1][pos.0 - 2] == '[');
-                box_stack.insert(((pos.0 - 1, pos.1), (pos.0 - 2, pos.1)));
-                find_connected_boxes(box_stack, map, direction, (pos.0 - 3, pos.1));
+                box_stack.insert(((pos.0 - 2, pos.1), (pos.0 - 1, pos.1)));
+                find_connected_boxes(box_stack, map, direction, (pos.0 - 2, pos.1));
             }
             '[' => {
-                panic!(
-                    "Bugged box in map: {}{}",
-                    map[pos.1][pos.0 - 1],
-                    map[pos.1][pos.0]
-                );
+                assert!(map[pos.1][pos.0] == ']');
+
+                // Just use code from left side:
+                find_connected_boxes(box_stack, map, direction, (pos.0 - 1, pos.1))
             }
 
             _ => (),
@@ -251,7 +259,7 @@ fn find_connected_boxes(
                         "[][]" => {
                             // Left []
                             box_stack.insert(((pos.0 - 1, pos.1 - 1), (pos.0, pos.1 - 1)));
-                            find_connected_boxes(box_stack, map, direction, (pos.0, pos.1 - 1));
+                            find_connected_boxes(box_stack, map, direction, (pos.0 - 1, pos.1 - 1));
 
                             // Right []
                             box_stack.insert(((pos.0 + 1, pos.1 - 1), (pos.0 + 2, pos.1 - 1)));
@@ -259,17 +267,17 @@ fn find_connected_boxes(
                         }
                         "[].." | "[].#" | "[]##" => {
                             // Left []
-                            box_stack.insert(((pos.0 - 2, pos.1 - 1), (pos.0 - 1, pos.1 - 1)));
+                            box_stack.insert(((pos.0 - 1, pos.1 - 1), (pos.0, pos.1 - 1)));
                             find_connected_boxes(box_stack, map, direction, (pos.0 - 1, pos.1 - 1))
                         }
                         "..[]" | "#.[]" | "##[]" => {
                             // Right []
-                            box_stack.insert(((pos.0, pos.1 - 1), (pos.0 + 1, pos.1 - 1)));
-                            find_connected_boxes(box_stack, map, direction, (pos.0, pos.1 - 1))
+                            box_stack.insert(((pos.0 + 1, pos.1 - 1), (pos.0 + 2, pos.1 - 1)));
+                            find_connected_boxes(box_stack, map, direction, (pos.0 + 1, pos.1 - 1))
                         }
                         ".[]." | "#[]." | ".[]#" | "#[]#" => {
                             // Center []
-                            box_stack.insert(((pos.0 - 1, pos.1 - 1), (pos.0, pos.1 - 1)));
+                            box_stack.insert(((pos.0, pos.1 - 1), (pos.0 + 1, pos.1 - 1)));
                             find_connected_boxes(box_stack, map, direction, (pos.0, pos.1 - 1))
                         }
                         _ => (),
@@ -292,11 +300,10 @@ fn find_connected_boxes(
                 find_connected_boxes(box_stack, map, direction, (pos.0 + 3, pos.1));
             }
             ']' => {
-                panic!(
-                    "Bugged box in map: {}{}",
-                    map[pos.1][pos.0 - 1],
-                    map[pos.1][pos.0]
-                );
+                assert!(map[pos.1][pos.0] == '[');
+
+                // Just use code from left side:
+                find_connected_boxes(box_stack, map, direction, (pos.0 - 1, pos.1))
             }
 
             _ => (),
@@ -332,24 +339,24 @@ fn find_connected_boxes(
                         }
                         "[].." | "[].#" | "[]##" => {
                             // Left []
-                            box_stack.insert(((pos.0 - 2, pos.1 + 1), (pos.0 - 1, pos.1 + 1)));
+                            box_stack.insert(((pos.0 - 1, pos.1 + 1), (pos.0, pos.1 + 1)));
                             find_connected_boxes(box_stack, map, direction, (pos.0 - 1, pos.1 + 1))
                         }
                         "..[]" | "#.[]" | "##[]" => {
                             // Right []
-                            box_stack.insert(((pos.0, pos.1 + 1), (pos.0 + 1, pos.1 + 1)));
+                            box_stack.insert(((pos.0 + 1, pos.1 + 1), (pos.0 + 2, pos.1 + 1)));
                             find_connected_boxes(box_stack, map, direction, (pos.0, pos.1 + 1))
                         }
                         ".[]." | "#[]." | ".[]#" | "#[]#" => {
                             // Center []
-                            box_stack.insert(((pos.0 - 1, pos.1 + 1), (pos.0, pos.1 + 1)));
+                            box_stack.insert(((pos.0, pos.1 + 1), (pos.0 + 1, pos.1 + 1)));
                             find_connected_boxes(box_stack, map, direction, (pos.0, pos.1 + 1))
                         }
                         _ => (),
                     }
                 }
                 ']' => {
-                    assert!(map[pos.1][pos.0 + 1] == '[');
+                    assert!(map[pos.1][pos.0 - 1] == '[');
 
                     // Just use code from left side:
                     find_connected_boxes(box_stack, map, direction, (pos.0 - 1, pos.1))
@@ -899,6 +906,62 @@ v
                 // Start from left and right bracket
                 let mut boxes: HashSet<((usize, usize), (usize, usize))> = HashSet::new();
                 find_connected_boxes(&mut boxes, &map, *direction, pos);
+                assert_eq!(boxes, correct_boxes[idx]);
+            }
+        }
+    }
+
+    #[test]
+    fn test_find_connect_boxes3() {
+        let input = r"
+##############
+##.....[]...##
+##..[][][]..##
+##...[].....##
+##############
+        ";
+        let map = get_map(input);
+        let correct_boxes: Vec<HashSet<((usize, usize), (usize, usize))>> = vec![
+            HashSet::from([((6, 2), (7, 2)), ((4, 2), (5, 2))]),
+            HashSet::from([((6, 2), (7, 2)), ((7, 1), (8, 1))]),
+            HashSet::from([((6, 2), (7, 2)), ((8, 2), (9, 2))]),
+            HashSet::from([((6, 2), (7, 2)), ((5, 3), (6, 3))]),
+        ];
+        for (idx, direction) in ['<', '^', '>', 'v'].iter().enumerate() {
+            for pos in [(6, 2), (7, 2)] {
+                // Start from left and right bracket
+                let mut boxes: HashSet<((usize, usize), (usize, usize))> = HashSet::new();
+                find_connected_boxes(&mut boxes, &map, *direction, pos);
+                assert_eq!(boxes, correct_boxes[idx]);
+            }
+        }
+    }
+
+    #[test]
+    fn test_find_connect_boxes4() {
+        let input = r"
+##############
+##....[]....##
+##.....[]...##
+##[][][][][]##
+##...[].....##
+##..[]......##
+##############
+        ";
+        let map = get_map(input);
+        let correct_boxes: Vec<HashSet<((usize, usize), (usize, usize))>> = vec![
+            HashSet::from([((6, 3), (7, 3)), ((4, 3), (5, 3)), ((2, 3), (3, 3))]),
+            HashSet::from([((6, 3), (7, 3)), ((7, 2), (8, 2)), ((6, 1), (7, 1))]),
+            HashSet::from([((6, 3), (7, 3)), ((8, 3), (9, 3)), ((10, 3), (11, 3))]),
+            HashSet::from([((6, 3), (7, 3)), ((5, 4), (6, 4)), ((4, 5), (5, 5))]),
+        ];
+        for (idx, direction) in ['<', '^', '>', 'v'].iter().enumerate() {
+            for pos in [(6, 3), (7, 3)] {
+                // Start from left and right bracket
+                let mut boxes: HashSet<((usize, usize), (usize, usize))> = HashSet::new();
+                find_connected_boxes(&mut boxes, &map, *direction, pos);
+
+                println!("Testing direction: '{direction}'.");
                 assert_eq!(boxes, correct_boxes[idx]);
             }
         }
