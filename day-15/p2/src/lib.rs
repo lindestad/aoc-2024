@@ -283,7 +283,7 @@ fn find_connected_boxes(
                         }
                         // Explicitly check for expected cases for bug testing purposes
                         "]..[" | "]..." | "...[" | "####" | ".###" | "..##" | "...#" | "...."
-                        | "]###" | "###[" => (),
+                        | "#..." | "##.." | "###." | "]###" | "###[" | "#..[" => (),
                         _ => panic!("Unexpected pattern encountered: {}", &above),
                     }
                 }
@@ -359,7 +359,7 @@ fn find_connected_boxes(
                         }
                         // Explicitly check for expected cases for bug testing purposes
                         "]..[" | "]..." | "...[" | "####" | ".###" | "..##" | "...#" | "...."
-                        | "]###" | "###[" => (),
+                        | "#..." | "##.." | "###." | "]###" | "###[" | "#..[" => (),
                         _ => panic!("Unexpected pattern encountered: {}", &below),
                     }
                 }
@@ -1686,6 +1686,58 @@ v
         print_map(&result);
         println!("\nCorrect:");
         print_map(&solution);
+        assert_eq!(result, solution);
+    }
+
+    #[test]
+    fn test_solve_large() {
+        let input = r"
+##########
+#..O..O.O#
+#......O.#
+#.OO..O.O#
+#..O@..O.#
+#O#..O...#
+#O..O..O.#
+#.OO.O.OO#
+#....O...#
+##########
+
+<vv>^<v^>v>^vv^v>v<>v^v<v<^vv<<<^><<><>>v<vvv<>^v^>^<<<><<v<<<v^vv^v>^
+vvv<<^>^v^^><<>>><>^<<><^vv^^<>vvv<>><^^v>^>vv<>v<<<<v<^v>^<^^>>>^<v<v
+><>vv>v^v^<>><>>>><^^>vv>v<^^^>>v^v^<^^>v^^>v^<^v>v<>>v^v^<v>v^^<^^vv<
+<<v<^>>^^^^>>>v^<>vvv^><v<<<>^^^vv^<vvv>^>v<^^^^v<>^>vvvv><>>v^<<^^^^^
+^><^><>>><>^^<<^^v>>><^<v>^<vv>>v>>>^v><>^v><<<<v>>v<v<v>vvv>^<><<>^><
+^>><>^v<><^vvv<^^<><v<<<<<><^v<<<><<<^^<v<^^^><^>>^<v^><<<^>>^v<v^v<v^
+>^>>^v>vv>^<<^v<>><<><<v<<v><>v<^vv<<<>^^v^>^^>>><<^v>>v^v><^^>>^<>vv^
+<><^^>^^^<><vvvvv^v<v<<>^v<v>v<<^><<><<><<<^^<<<^<<>><<><^^^>^^<>^>v<>
+^^>vv<^v^v<vv>^<><v<^v>^^^>>>^^vvv^>vvv<>>>^<^>>>>>^<<^v>^vvv<>^<><<v>
+v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^
+";
+        let map = expand_map(&get_map(input));
+        let moves = get_moves(input);
+
+        let solution = r"
+####################
+##[].......[].[][]##
+##[]...........[].##
+##[]........[][][]##
+##[]......[]....[]##
+##..##......[]....##
+##..[]............##
+##..@......[].[][]##
+##......[][]..[]..##
+####################
+";
+
+        let solution = get_map(solution);
+        let result = solve_maze(&map, moves);
+
+        println!("Result:");
+        print_map(&result);
+        println!("\nCorrect:");
+        print_map(&solution);
+
         assert_eq!(result, solution);
     }
 }
