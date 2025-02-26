@@ -82,11 +82,8 @@ fn blocked_internal(
                 blocked_internal(map, (pos.0 - 2, pos.1), direction, depth + 1) // Check neighbor
             }
             '[' => {
-                panic!(
-                    "Bugged1 box in map: {}{}",
-                    map[pos.1][pos.0 - 1],
-                    map[pos.1][pos.0]
-                );
+                assert!(map[pos.1][pos.0] == ']');
+                blocked_internal(map, (pos.0 - 2, pos.1), direction, depth + 1) // Check neighbor
             }
 
             _ => panic!("Invalid character found: {}", map[pos.1][pos.0 - 1]),
@@ -128,15 +125,13 @@ fn blocked_internal(
                 '.' => false,
                 '[' => {
                     assert!(map[pos.1][pos.0 + 2] == ']');
-                    blocked_internal(map, (pos.0 + 2, pos.1), direction, depth + 1)
                     // Check neighbor
+                    blocked_internal(map, (pos.0 + 2, pos.1), direction, depth + 1)
                 }
                 ']' => {
-                    panic!(
-                        "Bugged2 box in map: {}{}",
-                        map[pos.1][pos.0 + 1],
-                        map[pos.1][pos.0]
-                    );
+                    assert!(map[pos.1][pos.0] == '[');
+                    // Check neighbor
+                    blocked_internal(map, (pos.0 + 2, pos.1), direction, depth + 1)
                 }
 
                 _ => panic!("Invalid character found: {}", map[pos.1][pos.0 + 1]),
@@ -371,30 +366,35 @@ fn find_connected_boxes(
     }
 }
 
-fn single_move(
-    mut map: &Vec<Vec<char>>,
-    pos: (usize, usize),
-    direction: char,
-) -> (&Vec<Vec<char>>, (usize, usize)) {
+fn single_move(map: &mut Vec<Vec<char>>, pos: (usize, usize), direction: char) -> (usize, usize) {
     if blocked(&map.clone(), pos, direction) {
-        return (map, pos);
+        return pos;
     }
 
-    let mut box_stack: HashSet<((usize, usize), (usize, usize))> = HashSet::new(); // Vec<(Position of '[', Position of ']')>
+    let mut box_set: HashSet<((usize, usize), (usize, usize))> = HashSet::new(); // Vec<(Position of '[', Position of ']')>
+    find_connected_boxes(&mut box_set, map, direction, pos);
 
-    let p = pos_at_direction(pos, direction);
-    match map[p.1][p.0] {
-        '[' => box_stack.insert(((p.0, p.1), (p.0 + 1, p.1))),
-        ']' => box_stack.insert(((p.0, p.1), (p.0 - 1, p.1))),
-        '.' => return (map, p),
-        '#' => return (map, pos),
-        _ => panic!(
-            "Invalid character in map: '{}' at position {:?}",
-            map[p.1][p.0], p
-        ),
-    };
+    // Clear the relevant boxes
+    for bbox in box_set.iter() {
+        // Left brace
+        map[bbox.0 .1][bbox.0 .0] = '.';
 
-    (map, pos)
+        // Right brace
+        map[bbox.1 .1][bbox.1 .0] = '.';
+    }
+
+    // Write new boxes
+    for bbox in box_set.iter() {
+        // Left brace
+        let new_pos_left_brace = pos_at_direction(bbox.0, direction);
+        map[new_pos_left_brace.1][new_pos_left_brace.0] = '[';
+
+        // Right brace
+        let new_pos_right_brace = pos_at_direction(bbox.1, direction);
+        map[new_pos_right_brace.1][new_pos_right_brace.0] = ']';
+    }
+
+    pos_at_direction(pos, direction) // New robot position
 }
 
 #[cfg(test)]
@@ -963,6 +963,104 @@ v
 
                 println!("Testing direction: '{direction}'.");
                 assert_eq!(boxes, correct_boxes[idx]);
+            }
+        }
+    }
+
+    #[test]
+    fn test_find_connect_boxes5() {
+        let input = r"
+##############
+##....[][]..##
+##.....[]...##
+##[][][][][]##
+##...[].....##
+##..[][]....##
+##############
+        ";
+        let map = get_map(input);
+        let correct_boxes: Vec<HashSet<((usize, usize), (usize, usize))>> = vec![
+            HashSet::from([((6, 3), (7, 3)), ((4, 3), (5, 3)), ((2, 3), (3, 3))]),
+            HashSet::from([
+                ((6, 3), (7, 3)),
+                ((7, 2), (8, 2)),
+                ((6, 1), (7, 1)),
+                ((8, 1), (9, 1)),
+            ]),
+            HashSet::from([((6, 3), (7, 3)), ((8, 3), (9, 3)), ((10, 3), (11, 3))]),
+            HashSet::from([
+                ((6, 3), (7, 3)),
+                ((5, 4), (6, 4)),
+                ((4, 5), (5, 5)),
+                ((6, 5), (7, 5)),
+            ]),
+        ];
+        for (idx, direction) in ['<', '^', '>', 'v'].iter().enumerate() {
+            for pos in [(6, 3), (7, 3)] {
+                // Start from left and right bracket
+                let mut boxes: HashSet<((usize, usize), (usize, usize))> = HashSet::new();
+                find_connected_boxes(&mut boxes, &map, *direction, pos);
+
+                println!("Testing direction: '{direction}'.");
+                assert_eq!(boxes, correct_boxes[idx]);
+            }
+        }
+    }
+
+    #[test]
+    fn test_single_move1() {
+        let input = r"
+##############
+##..........##
+##....[]....##
+##..........##
+##############
+        ";
+        let map = get_map(input);
+        let answers = [
+            r"
+##############
+##..........##
+##...[].....##
+##..........##
+##############
+        ",
+            r"
+##############
+##....[]....##
+##..........##
+##..........##
+##############
+        ",
+            r"
+##############
+##..........##
+##.....[]...##
+##..........##
+##############
+        ",
+            r"
+##############
+##..........##
+##..........##
+##....[]....##
+##############
+        ",
+        ];
+        let directions = vec!['<', '^', '>', 'v'];
+        let start_positions = [(6, 2), (7, 2)];
+        for pos in start_positions {
+            for (answer, direction) in answers.iter().zip(directions.clone()) {
+                let expected_map = get_map(answer);
+                let mut result = map.clone();
+                single_move(&mut result, pos, direction);
+                if result.clone() != expected_map {
+                    println!("Correct: ");
+                    print_map(&expected_map);
+                    println!("\nActual:");
+                    print_map(&result.clone());
+                }
+                assert_eq!(result, expected_map);
             }
         }
     }
