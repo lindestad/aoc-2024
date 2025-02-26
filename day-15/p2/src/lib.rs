@@ -229,7 +229,7 @@ fn find_connected_boxes(
                 box_stack.insert(((pos.0 - 1, pos.1), (pos.0, pos.1)));
 
                 // Just use code from left side:
-                find_connected_boxes(box_stack, map, direction, (pos.0 - 2, pos.1))
+                find_connected_boxes(box_stack, map, direction, (pos.0 - 1, pos.1))
             }
 
             _ => (),
@@ -283,7 +283,8 @@ fn find_connected_boxes(
                         }
                         // Explicitly check for expected cases for bug testing purposes
                         "]..[" | "]..." | "...[" | "####" | ".###" | "..##" | "...#" | "...."
-                        | "#..." | "##.." | "###." | "]###" | "###[" | "#..[" => (),
+                        | "#..." | "##.." | "###." | "]###" | "###[" | "#..[" | "]..#" | "#..#" => {
+                        }
                         _ => panic!("Unexpected pattern encountered: {}", &above),
                     }
                 }
@@ -301,13 +302,13 @@ fn find_connected_boxes(
             '[' => {
                 assert!(map[pos.1][pos.0 + 2] == ']');
                 box_stack.insert(((pos.0 + 1, pos.1), (pos.0 + 2, pos.1)));
-                find_connected_boxes(box_stack, map, direction, (pos.0 + 3, pos.1));
+                find_connected_boxes(box_stack, map, direction, (pos.0 + 2, pos.1));
             }
             ']' => {
                 assert!(map[pos.1][pos.0] == '[');
 
                 // Just use code from left side:
-                find_connected_boxes(box_stack, map, direction, (pos.0 - 1, pos.1))
+                find_connected_boxes(box_stack, map, direction, (pos.0 + 1, pos.1))
             }
 
             _ => (),
@@ -335,7 +336,7 @@ fn find_connected_boxes(
                         "[][]" => {
                             // Left []
                             box_stack.insert(((pos.0 - 1, pos.1 + 1), (pos.0, pos.1 + 1)));
-                            find_connected_boxes(box_stack, map, direction, (pos.0, pos.1 + 1));
+                            find_connected_boxes(box_stack, map, direction, (pos.0 - 1, pos.1 + 1));
 
                             // Right []
                             box_stack.insert(((pos.0 + 1, pos.1 + 1), (pos.0 + 2, pos.1 + 1)));
@@ -349,7 +350,7 @@ fn find_connected_boxes(
                         "..[]" | "#.[]" | "##[]" | "].[]" | "]#[]" => {
                             // Right []
                             box_stack.insert(((pos.0 + 1, pos.1 + 1), (pos.0 + 2, pos.1 + 1)));
-                            find_connected_boxes(box_stack, map, direction, (pos.0, pos.1 + 1))
+                            find_connected_boxes(box_stack, map, direction, (pos.0 + 1, pos.1 + 1))
                         }
                         ".[]." | "#[]." | ".[]#" | "#[]#" | "][][" | "][]." | "][]#" | ".[]["
                         | "#[][" => {
@@ -359,7 +360,8 @@ fn find_connected_boxes(
                         }
                         // Explicitly check for expected cases for bug testing purposes
                         "]..[" | "]..." | "...[" | "####" | ".###" | "..##" | "...#" | "...."
-                        | "#..." | "##.." | "###." | "]###" | "###[" | "#..[" => (),
+                        | "#..." | "##.." | "###." | "]###" | "###[" | "#..[" | "]..#" | "#..#" => {
+                        }
                         _ => panic!("Unexpected pattern encountered: {}", &below),
                     }
                 }
@@ -958,6 +960,7 @@ v
     }
 
     #[test]
+    #[allow(clippy::type_complexity)]
     fn test_find_connect_boxes2() {
         let input = r"
 ##############
@@ -984,6 +987,7 @@ v
     }
 
     #[test]
+    #[allow(clippy::type_complexity)]
     fn test_find_connect_boxes3() {
         let input = r"
 ##############
@@ -1010,6 +1014,7 @@ v
     }
 
     #[test]
+    #[allow(clippy::type_complexity)]
     fn test_find_connect_boxes4() {
         let input = r"
 ##############
@@ -1040,6 +1045,7 @@ v
     }
 
     #[test]
+    #[allow(clippy::type_complexity)]
     fn test_find_connect_boxes5() {
         let input = r"
 ##############
@@ -1408,6 +1414,52 @@ v
     }
 
     #[test]
+    fn test_single_move_right4() {
+        let input = r"
+####################
+##[]..[]....[]..[]##
+##[]..........[]..##
+##......@[][].[].[]#
+##....[]..[]..[]..##
+##..##....[]......##
+##...[].......[]..##
+##.....[]..[].[][]##
+##........[]......##
+####################
+        ";
+        let map = get_map(input);
+        let answer = r"
+####################
+##[]..[]....[]..[]##
+##[]..........[]..##
+##.......@[][][].[]#
+##....[]..[]..[]..##
+##..##....[]......##
+##...[].......[]..##
+##.....[]..[].[][]##
+##........[]......##
+####################
+        ";
+        let direction = '>';
+        let pos = robot_position(&map);
+        let expected_map = get_map(answer);
+        let mut result = map.clone();
+        result[pos.1][pos.0] = '.';
+        single_move(&mut result, pos, direction);
+        let new_pos = pos_at_direction(pos, direction);
+        result[new_pos.1][new_pos.0] = '@';
+        if result.clone() != expected_map {
+            print_map(&map);
+            println!("{}", map[pos.1][pos.0]);
+            println!("Correct: ");
+            print_map(&expected_map);
+            println!("\nActual:");
+            print_map(&result.clone());
+        }
+        assert_eq!(result, expected_map);
+    }
+
+    #[test]
     fn test_single_move_up1() {
         let input = r"
 ##############
@@ -1622,6 +1674,54 @@ v
     }
 
     #[test]
+    fn test_single_move_down1() {
+        let input = r"
+####################
+##[]..[]......[][]##
+##[]...........[].##
+##...........@[][]##
+##..........[].[].##
+##..##[]..[].[]...##
+##...[]...[]..[]..##
+##.....[]..[].[][]##
+##........[]......##
+####################
+";
+
+        let direction = 'v';
+        let map = get_map(input);
+
+        let solution = r"
+####################
+##[]..[]......[][]##
+##[]...........[].##
+##............[][]##
+##...........@.[].##
+##..##[]..[][]....##
+##...[]...[].[]...##
+##.....[]..[].[][]##
+##........[]..[]..##
+####################
+";
+        let solution = get_map(solution);
+
+        let mut result = map.clone();
+
+        let rpos = robot_position(&map);
+        result[rpos.1][rpos.0] = '.';
+        let new_rpos = single_move(&mut result, rpos, direction);
+        result[new_rpos.1][new_rpos.0] = '@';
+
+        if result.clone() != solution {
+            println!("Correct: ");
+            print_map(&solution);
+            println!("\nActual:");
+            print_map(&result.clone());
+        }
+        assert_eq!(result, solution);
+    }
+
+    #[test]
     fn test_solve1() {
         let input = r"
 #######
@@ -1680,6 +1780,120 @@ v
 ##....[]....##
 ##..........##
 ##############
+        ";
+        let solution = get_map(solution);
+        println!("Result:");
+        print_map(&result);
+        println!("\nCorrect:");
+        print_map(&solution);
+        assert_eq!(result, solution);
+    }
+
+    #[test]
+    fn test_solve3() {
+        let input = r"
+#######
+#...#.#
+#.....#
+#..OO@#
+#..O..#
+#.....#
+#######
+
+<vv<<^^<<^^
+        ";
+        let map = expand_map(&get_map(input));
+        let moves = get_moves(input);
+        let result = solve_maze(&map, moves);
+
+        let solution = r"
+##############
+##...[].##..##
+##...@.[]...##
+##....[]....##
+##..........##
+##..........##
+##############
+        ";
+        let solution = get_map(solution);
+        println!("Result:");
+        print_map(&result);
+        println!("\nCorrect:");
+        print_map(&solution);
+        assert_eq!(result, solution);
+    }
+
+    #[test]
+    fn test_solve4() {
+        let input = r"
+####################
+##[]..[]....[]..[]##
+##[]..........[]..##
+##......@[][].[].[]#
+##....[]..[]..[]..##
+##..##....[]......##
+##...[].......[]..##
+##.....[]..[].[][]##
+##........[]......##
+####################
+
+>
+        ";
+        let map = get_map(input);
+        let moves = get_moves(input);
+        let result = solve_maze(&map, moves);
+
+        let solution = r"
+####################
+##[]..[]....[]..[]##
+##[]..........[]..##
+##.......@[][][].[]#
+##....[]..[]..[]..##
+##..##....[]......##
+##...[].......[]..##
+##.....[]..[].[][]##
+##........[]......##
+####################
+        ";
+        let solution = get_map(solution);
+        println!("Result:");
+        print_map(&result);
+        println!("\nCorrect:");
+        print_map(&solution);
+        assert_eq!(result, solution);
+    }
+
+    #[test]
+    fn test_solve5() {
+        let input = r"
+####################
+##[]..[]......[][]##
+##[]........@..[].##
+##..........[][][]##
+##...........[][].##
+##..##[]..[]......##
+##...[]...[]..[]..##
+##.....[]..[].[][]##
+##........[]......##
+####################
+
+v
+        ";
+        let map = get_map(input);
+        let moves = get_moves(input);
+        let result = solve_maze(&map, moves);
+
+        let solution = r"
+####################
+##[]..[]......[][]##
+##[]...........[].##
+##..........@.[][]##
+##..........[].[].##
+##..##[]..[].[]...##
+##...[]...[]..[]..##
+##.....[]..[].[][]##
+##........[]......##
+####################
         ";
         let solution = get_map(solution);
         println!("Result:");
