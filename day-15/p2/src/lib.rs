@@ -262,22 +262,26 @@ fn find_connected_boxes(
                             box_stack.insert(((pos.0 + 1, pos.1 - 1), (pos.0 + 2, pos.1 - 1)));
                             find_connected_boxes(box_stack, map, direction, (pos.0 + 1, pos.1 - 1))
                         }
-                        "[].." | "[].#" | "[]##" => {
+                        "[].." | "[].#" | "[]##" | "[].[" | "[]#[" => {
                             // Left []
                             box_stack.insert(((pos.0 - 1, pos.1 - 1), (pos.0, pos.1 - 1)));
                             find_connected_boxes(box_stack, map, direction, (pos.0 - 1, pos.1 - 1))
                         }
-                        "..[]" | "#.[]" | "##[]" => {
+                        "..[]" | "#.[]" | "##[]" | "].[]" | "]#[]" => {
                             // Right []
                             box_stack.insert(((pos.0 + 1, pos.1 - 1), (pos.0 + 2, pos.1 - 1)));
                             find_connected_boxes(box_stack, map, direction, (pos.0 + 1, pos.1 - 1))
                         }
-                        ".[]." | "#[]." | ".[]#" | "#[]#" => {
+                        ".[]." | "#[]." | ".[]#" | "#[]#" | "][][" | "][]." | "][]#" | ".[]["
+                        | "#[][" => {
                             // Center []
                             box_stack.insert(((pos.0, pos.1 - 1), (pos.0 + 1, pos.1 - 1)));
                             find_connected_boxes(box_stack, map, direction, (pos.0, pos.1 - 1))
                         }
-                        _ => (),
+                        // Explicitly check for expected cases for bug testing purposes
+                        "]..[" | "]..." | "...[" | "####" | ".###" | "..##" | "...#" | "...."
+                        | "]###" | "###[" => (),
+                        _ => panic!("Unexpected pattern encountered: {}", &above),
                     }
                 }
                 ']' => {
@@ -334,22 +338,26 @@ fn find_connected_boxes(
                             box_stack.insert(((pos.0 + 1, pos.1 + 1), (pos.0 + 2, pos.1 + 1)));
                             find_connected_boxes(box_stack, map, direction, (pos.0 + 1, pos.1 + 1))
                         }
-                        "[].." | "[].#" | "[]##" => {
+                        "[].." | "[].#" | "[]##" | "[].[" | "[]#[" => {
                             // Left []
                             box_stack.insert(((pos.0 - 1, pos.1 + 1), (pos.0, pos.1 + 1)));
                             find_connected_boxes(box_stack, map, direction, (pos.0 - 1, pos.1 + 1))
                         }
-                        "..[]" | "#.[]" | "##[]" => {
+                        "..[]" | "#.[]" | "##[]" | "].[]" | "]#[]" => {
                             // Right []
                             box_stack.insert(((pos.0 + 1, pos.1 + 1), (pos.0 + 2, pos.1 + 1)));
                             find_connected_boxes(box_stack, map, direction, (pos.0, pos.1 + 1))
                         }
-                        ".[]." | "#[]." | ".[]#" | "#[]#" => {
+                        ".[]." | "#[]." | ".[]#" | "#[]#" | "][][" | "][]." | "][]#" | ".[]["
+                        | "#[][" => {
                             // Center []
                             box_stack.insert(((pos.0, pos.1 + 1), (pos.0 + 1, pos.1 + 1)));
                             find_connected_boxes(box_stack, map, direction, (pos.0, pos.1 + 1))
                         }
-                        _ => (),
+                        // Explicitly check for expected cases for bug testing purposes
+                        "]..[" | "]..." | "...[" | "####" | ".###" | "..##" | "...#" | "...."
+                        | "]###" | "###[" => (),
+                        _ => panic!("Unexpected pattern encountered: {}", &below),
                     }
                 }
                 ']' => {
@@ -368,6 +376,7 @@ fn find_connected_boxes(
     }
 }
 
+#[allow(clippy::ptr_arg)] // Incorrect clippy suggestion as can't use &map.clone() on slice
 fn single_move(map: &mut Vec<Vec<char>>, pos: (usize, usize), direction: char) -> (usize, usize) {
     if blocked(&map.clone(), pos, direction) {
         return pos;
@@ -397,6 +406,21 @@ fn single_move(map: &mut Vec<Vec<char>>, pos: (usize, usize), direction: char) -
     }
 
     pos_at_direction(pos, direction) // New robot position
+}
+
+#[allow(clippy::ptr_arg)] // Incorrect clippy suggestion as can't use &map.clone() on slice
+pub fn solve_maze(map: &Vec<Vec<char>>, moves: Vec<char>) -> Vec<Vec<char>> {
+    let rpos = robot_position(map);
+    let mut map = map.clone();
+    map[rpos.1][rpos.0] = '.'; // Clear robot from map
+
+    let mut rpos = rpos;
+    for direction in moves {
+        rpos = single_move(&mut map, rpos, direction);
+    }
+
+    map[rpos.1][rpos.0] = '@'; // Put the robot back
+    map
 }
 
 #[cfg(test)]
@@ -1353,5 +1377,253 @@ v
             }
             assert_eq!(result, expected_map);
         }
+    }
+
+    #[test]
+    fn test_single_move_up1() {
+        let input = r"
+##############
+##..........##
+##...[].....##
+##....[]....##
+##..........##
+##############
+        ";
+        let map = get_map(input);
+        let answer = r"
+##############
+##...[].....##
+##....[]....##
+##..........##
+##..........##
+##############
+        ";
+        let direction = '^';
+        let start_positions = [(6, 3), (7, 3)];
+        for pos in start_positions {
+            let expected_map = get_map(answer);
+            let mut result = map.clone();
+            single_move(&mut result, pos, direction);
+            if result.clone() != expected_map {
+                println!("Correct: ");
+                print_map(&expected_map);
+                println!("\nActual:");
+                print_map(&result.clone());
+            }
+            assert_eq!(result, expected_map);
+        }
+    }
+
+    #[test]
+    fn test_single_move_up2() {
+        let input = r"
+##############
+##....[]....##
+##...[].....##
+##....[]....##
+##..........##
+##############
+        ";
+        let map = get_map(input);
+        let answer = r"
+##############
+##....[]....##
+##...[].....##
+##....[]....##
+##..........##
+##############
+        ";
+        let direction = '^';
+        let start_positions = [(6, 3), (7, 3)];
+        for pos in start_positions {
+            let expected_map = get_map(answer);
+            let mut result = map.clone();
+            single_move(&mut result, pos, direction);
+            if result.clone() != expected_map {
+                println!("Correct: ");
+                print_map(&expected_map);
+                println!("\nActual:");
+                print_map(&result.clone());
+            }
+            assert_eq!(result, expected_map);
+        }
+    }
+
+    #[test]
+    fn test_single_move_up3() {
+        let input = r"
+##############
+##...[].....##
+##.....[]...##
+##....[]....##
+##..........##
+##############
+        ";
+        let map = get_map(input);
+        let answer = r"
+##############
+##...[][]...##
+##....[]....##
+##..........##
+##..........##
+##############
+        ";
+        let direction = '^';
+        let start_positions = [(6, 3), (7, 3)];
+        for pos in start_positions {
+            let expected_map = get_map(answer);
+            let mut result = map.clone();
+            single_move(&mut result, pos, direction);
+            if result.clone() != expected_map {
+                println!("Correct: ");
+                print_map(&expected_map);
+                println!("\nActual:");
+                print_map(&result.clone());
+            }
+            assert_eq!(result, expected_map);
+        }
+    }
+
+    #[test]
+    fn test_single_move_up4() {
+        let input = r"
+##############
+##...[].[]..##
+##.....[]...##
+##....[]....##
+##..........##
+##############
+        ";
+        let map = get_map(input);
+        let answer = r"
+##############
+##...[].[]..##
+##.....[]...##
+##....[]....##
+##..........##
+##############
+        ";
+        let direction = '^';
+        let start_positions = [(6, 3), (7, 3)];
+        for pos in start_positions {
+            let expected_map = get_map(answer);
+            let mut result = map.clone();
+            single_move(&mut result, pos, direction);
+            if result.clone() != expected_map {
+                println!("Correct: ");
+                print_map(&expected_map);
+                println!("\nActual:");
+                print_map(&result.clone());
+            }
+            assert_eq!(result, expected_map);
+        }
+    }
+
+    #[test]
+    fn test_single_move_up5() {
+        let input = r"
+##############
+##..........##
+##......[]..##
+##.....[]...##
+##....[]....##
+##..........##
+##############
+        ";
+        let map = get_map(input);
+        let answer = r"
+##############
+##......[]..##
+##.....[]...##
+##....[]....##
+##..........##
+##..........##
+##############
+        ";
+        let direction = '^';
+        let start_positions = [(6, 4), (7, 4)];
+        for pos in start_positions {
+            let expected_map = get_map(answer);
+            let mut result = map.clone();
+            single_move(&mut result, pos, direction);
+            if result.clone() != expected_map {
+                println!("Correct: ");
+                print_map(&expected_map);
+                println!("\nActual:");
+                print_map(&result.clone());
+            }
+            assert_eq!(result, expected_map);
+        }
+    }
+
+    #[test]
+    fn test_single_move_up6() {
+        let input = r"
+##############
+##..........##
+##...[].[]..##
+##.....[]...##
+##....[]....##
+##..........##
+##############
+        ";
+        let map = get_map(input);
+        let answer = r"
+##############
+##......[]..##
+##...[][]...##
+##....[]....##
+##..........##
+##..........##
+##############
+        ";
+        let direction = '^';
+        let start_positions = [(6, 4), (7, 4)];
+        for pos in start_positions {
+            let expected_map = get_map(answer);
+            let mut result = map.clone();
+            single_move(&mut result, pos, direction);
+            if result.clone() != expected_map {
+                println!("Correct: ");
+                print_map(&expected_map);
+                println!("\nActual:");
+                print_map(&result.clone());
+            }
+            assert_eq!(result, expected_map);
+        }
+    }
+
+    #[test]
+    fn test_solve1() {
+        let input = r"
+#######
+#...#.#
+#.....#
+#..OO@#
+#..O..#
+#.....#
+#######
+
+<vv<<^^<<^^
+        ";
+        let map = expand_map(&get_map(&input));
+        let moves = get_moves(input);
+        let result = solve_maze(&map, moves);
+
+        let solution = r"
+##############
+##...[].##..##
+##...@.[]...##
+##....[]....##
+##..........##
+##..........##
+##############
+        ";
+        let solution = get_map(solution);
+        println!("Result:");
+        print_map(&result);
+        println!("\nCorrect:");
+        print_map(&solution);
+        assert_eq!(result, solution);
     }
 }
