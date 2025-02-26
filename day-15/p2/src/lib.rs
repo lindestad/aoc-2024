@@ -193,6 +193,274 @@ fn robot_position(map: &[Vec<char>]) -> (usize, usize) {
     robot_pos.expect("No robot found in input map. (No '@' present).")
 }
 
+fn pos_at_direction(pos: (usize, usize), direction: char) -> (usize, usize) {
+    match direction {
+        '<' => (pos.0 - 1, pos.1),
+        '^' => (pos.0, pos.1 - 1),
+        '>' => (pos.0 + 1, pos.1),
+        'v' => (pos.0, pos.1 + 1),
+        _ => panic!("Invalid direction: {direction}."),
+    }
+}
+
+fn find_connected_boxes(
+    mut box_stack: Vec<((usize, usize), (usize, usize))>,
+    map: &[Vec<char>],
+    direction: char,
+    pos: (usize, usize),
+) -> Vec<((usize, usize), (usize, usize))> {
+    match direction {
+        '<' => match map[pos.1][pos.0 - 1] {
+            ']' => {
+                assert!(map[pos.1][pos.0 - 2] == '[');
+                box_stack.push(((pos.0 - 1, pos.1), (pos.0 - 2, pos.1)));
+                box_stack.extend(find_connected_boxes(
+                    box_stack,
+                    map,
+                    direction,
+                    (pos.0 - 3, pos.1),
+                ));
+                return box_stack;
+            }
+            '[' => {
+                panic!(
+                    "Bugged box in map: {}{}",
+                    map[pos.1][pos.0 - 1],
+                    map[pos.1][pos.0]
+                );
+            }
+
+            _ => return box_stack,
+        },
+        '^' => {
+            match map[pos.1][pos.0] {
+                '[' => {
+                    assert!(map[pos.1][pos.0 + 1] == ']');
+                    // Check space above box
+                    match map[pos.1 - 1][pos.0] {
+                        ']' => {
+                            // Box left facing
+                            assert!(map[pos.1 - 1][pos.0 - 1] == '[');
+
+                            //Check the section above, Distinct possible cases:
+                            //    [][]  |    []..  |    ..[]  |    .[].  |    ....
+                            // 1: .[].  | 2: .[].  | 3: .[].  | 4: .[].  | 5: .[].
+                            //     ^          ^          ^          ^          ^
+
+                            let above: String = [
+                                map[pos.1 - 1][pos.0 - 2],
+                                map[pos.1 - 1][pos.0 - 1],
+                                map[pos.1 - 1][pos.0],
+                                map[pos.1 - 1][pos.0 + 1],
+                            ]
+                            .iter()
+                            .collect();
+
+                            match &above as &str {
+                                "[][]" => {
+                                    // Left []
+                                    box_stack
+                                        .push(((pos.0 - 2, pos.1 - 1), (pos.0 - 1, pos.1 - 1)));
+                                    box_stack.extend(find_connected_boxes(
+                                        box_stack,
+                                        map,
+                                        direction,
+                                        (pos.0 - 1, pos.1 - 1),
+                                    ));
+
+                                    // Right []
+                                    box_stack.push(((pos.0, pos.1 - 1), (pos.0 + 1, pos.1 - 1)));
+                                    box_stack.extend(find_connected_boxes(
+                                        box_stack,
+                                        map,
+                                        direction,
+                                        (pos.0, pos.1 - 1),
+                                    ));
+                                    return *box_stack;
+                                }
+                                "[].." | "[].#" | "[]##" => {
+                                    // Left []
+                                    box_stack
+                                        .push(((pos.0 - 2, pos.1 - 1), (pos.0 - 1, pos.1 - 1)));
+                                    box_stack.extend(find_connected_boxes(
+                                        box_stack,
+                                        map,
+                                        direction,
+                                        (pos.0 - 1, pos.1 - 1),
+                                    ));
+                                    return *box_stack;
+                                }
+                                "..[]" | "#.[]" | "##[]" => {
+                                    // Right []
+                                    box_stack.push(((pos.0, pos.1 - 1), (pos.0 + 1, pos.1 - 1)));
+                                    box_stack.extend(find_connected_boxes(
+                                        box_stack,
+                                        map,
+                                        direction,
+                                        (pos.0, pos.1 - 1),
+                                    ));
+                                    return *box_stack;
+                                }
+                                ".[]." | "#[]." | ".[]#" | "#[]#" => {
+                                    // Center []
+                                    box_stack.push(((pos.0 - 1, pos.1 - 1), (pos.0, pos.1 - 1)));
+                                    box_stack.extend(find_connected_boxes(
+                                        box_stack,
+                                        map,
+                                        direction,
+                                        (pos.0, pos.1 - 1),
+                                    ));
+                                    return *box_stack;
+                                }
+                                _ => return *box_stack,
+                            }
+                        }
+                        '[' => {
+                            // Box right facing
+                            assert!(map[pos.1 - 1][pos.0 + 1] == ']');
+
+                            //Check the section above, Distinct possible cases:
+                            //    [][]  |    []..  |    ..[]  |    .[].  |    ....
+                            // 1: .[].  | 2: .[].  | 3: .[].  | 4: .[].  | 5: .[].
+                            //     ^          ^          ^          ^          ^
+
+                            let above: String = [
+                                map[pos.1 - 1][pos.0 - 1],
+                                map[pos.1 - 1][pos.0],
+                                map[pos.1 - 1][pos.0 + 1],
+                                map[pos.1 - 1][pos.0 + 2],
+                            ]
+                            .iter()
+                            .collect();
+
+                            match &above as &str {
+                                "[][]" => {
+                                    // Left []
+                                    box_stack.push(((pos.0 - 1, pos.1 - 1), (pos.0, pos.1 - 1)));
+                                    box_stack.extend(find_connected_boxes(
+                                        box_stack,
+                                        map,
+                                        direction,
+                                        (pos.0, pos.1 - 1),
+                                    ));
+
+                                    // Right []
+                                    box_stack
+                                        .push(((pos.0 + 1, pos.1 - 1), (pos.0 + 2, pos.1 - 1)));
+                                    box_stack.extend(find_connected_boxes(
+                                        box_stack,
+                                        map,
+                                        direction,
+                                        (pos.0 + 1, pos.1 - 1),
+                                    ));
+                                    return *box_stack;
+                                }
+                                "[].." | "[].#" | "[]##" => {
+                                    // Left []
+                                    box_stack
+                                        .push(((pos.0 - 2, pos.1 - 1), (pos.0 - 1, pos.1 - 1)));
+                                    box_stack.extend(find_connected_boxes(
+                                        box_stack,
+                                        map,
+                                        direction,
+                                        (pos.0 - 1, pos.1 - 1),
+                                    ));
+                                    return *box_stack;
+                                }
+                                "..[]" | "#.[]" | "##[]" => {
+                                    // Right []
+                                    box_stack.push(((pos.0, pos.1 - 1), (pos.0 + 1, pos.1 - 1)));
+                                    box_stack.extend(find_connected_boxes(
+                                        box_stack,
+                                        map,
+                                        direction,
+                                        (pos.0, pos.1 - 1),
+                                    ));
+                                    return *box_stack;
+                                }
+                                ".[]." | "#[]." | ".[]#" | "#[]#" => {
+                                    // Center []
+                                    box_stack.push(((pos.0 - 1, pos.1 - 1), (pos.0, pos.1 - 1)));
+                                    box_stack.extend(find_connected_boxes(
+                                        box_stack,
+                                        map,
+                                        direction,
+                                        (pos.0, pos.1 - 1),
+                                    ));
+                                    return *box_stack;
+                                }
+                                _ => return *box_stack,
+                            }
+                        }
+                        _ => return *box_stack,
+                    }
+                }
+                ']' => {
+                    assert!(map[pos.1][pos.0 - 1] == '[');
+                    // Check space above box
+                    todo!()
+                }
+
+                _ => return *box_stack,
+            }
+        }
+        '>' => match map[pos.1][pos.0 + 1] {
+            '[' => {
+                assert!(map[pos.1][pos.0 + 2] == ']');
+                box_stack.push(((pos.0 + 1, pos.1), (pos.0 + 2, pos.1)));
+                box_stack.extend(find_connected_boxes(
+                    box_stack,
+                    map,
+                    direction,
+                    (pos.0 + 3, pos.1),
+                ));
+                return *box_stack;
+            }
+            ']' => {
+                panic!(
+                    "Bugged box in map: {}{}",
+                    map[pos.1][pos.0 - 1],
+                    map[pos.1][pos.0]
+                );
+            }
+
+            _ => *box_stack,
+        },
+        'v' => {
+            todo!();
+        }
+        _ => {
+            panic!("Invalid input direction given: '{direction}', must be one of ['<', '^', '>', 'v'].");
+        }
+    }
+}
+
+fn single_move(
+    mut map: &Vec<Vec<char>>,
+    pos: (usize, usize),
+    direction: char,
+) -> (&Vec<Vec<char>>, (usize, usize)) {
+    if blocked(&map.clone(), pos, direction) {
+        return (map, pos);
+    }
+
+    let mut box_stack: Vec<((usize, usize), (usize, usize))> = Vec::new(); // Vec<(Position of '[', Position of ']')>
+
+    let p = pos_at_direction(pos, direction);
+    match map[p.1][p.0] {
+        '[' => box_stack.push(((p.0, p.1), (p.0 + 1, p.1))),
+        ']' => box_stack.push(((p.0, p.1), (p.0 - 1, p.1))),
+        '.' => return (map, p),
+        '#' => return (map, pos),
+        _ => panic!(
+            "Invalid character in map: '{}' at position {:?}",
+            map[p.1][p.0], p
+        ),
+    }
+
+    (map, pos)
+}
+
 #[cfg(test)]
 pub mod tests {
     use super::*;
