@@ -60,14 +60,24 @@ pub fn expand_map(map: &[Vec<char>]) -> Vec<Vec<char>> {
     out_map
 }
 
+// Wrapper to keep track of recursion depth internally
 pub fn blocked(map: &Vec<Vec<char>>, pos: (usize, usize), direction: char) -> bool {
+    blocked_internal(map, pos, direction, 0)
+}
+
+fn blocked_internal(
+    map: &Vec<Vec<char>>,
+    pos: (usize, usize),
+    direction: char,
+    depth: usize,
+) -> bool {
     match direction {
         '<' => match map[pos.1][pos.0 - 1] {
             '#' => true,
             '.' => false,
             ']' => {
                 assert!(map[pos.1][pos.0 - 2] == '[');
-                blocked(map, (pos.0 - 2, pos.1), direction) // Check neighbor
+                blocked_internal(map, (pos.0 - 2, pos.1), direction, depth + 1) // Check neighbor
             }
             '[' => {
                 panic!(
@@ -82,15 +92,31 @@ pub fn blocked(map: &Vec<Vec<char>>, pos: (usize, usize), direction: char) -> bo
         '^' => {
             match map[pos.1][pos.0] {
                 '[' => {
-                    todo!();
+                    assert!(map[pos.1][pos.0 + 1] == ']');
+                    // Check space above box
+                    blocked_internal(map, (pos.0, pos.1 - 1), direction, depth + 1)
+                        || blocked_internal(map, (pos.0 + 1, pos.1 - 1), direction, depth + 1)
                 }
                 ']' => {
-                    todo!();
+                    assert!(map[pos.1][pos.0 - 1] == '[');
+                    // Check space above box
+                    blocked_internal(map, (pos.0, pos.1 - 1), direction, depth + 1)
+                        || blocked_internal(map, (pos.0 - 1, pos.1 - 1), direction, depth + 1)
                 }
                 '.' | '@' => {
-                    todo!();
+                    if depth == 0 {
+                        blocked_internal(map, (pos.0, pos.1 - 1), direction, depth + 1)
+                    } else {
+                        false
+                    }
                 }
-                '#' => panic!("Trying to check from bondary and up, is this intentional? Passed position {:?}, direction '{}'.", pos, direction),
+                '#' => {
+                    if depth == 0 {
+                        panic!("Trying to check from boundary and up, is this intentional? Passed position {:?}, direction '{}'.", pos, direction);
+                    } else {
+                        true
+                    }
+                }
                 _ => panic!("Invalid character found in map at position {:?}.", pos),
             }
         }
@@ -100,7 +126,8 @@ pub fn blocked(map: &Vec<Vec<char>>, pos: (usize, usize), direction: char) -> bo
                 '.' => false,
                 '[' => {
                     assert!(map[pos.1][pos.0 + 2] == ']');
-                    blocked(map, (pos.0 + 2, pos.1), direction) // Check neighbor
+                    blocked_internal(map, (pos.0 + 2, pos.1), direction, depth + 1)
+                    // Check neighbor
                 }
                 ']' => {
                     panic!(
@@ -287,6 +314,160 @@ pub mod tests {
 ##############
 
 >
+        ";
+        let map = get_map(input);
+        let moves = get_moves(input);
+        let rpos = robot_position(&map);
+
+        let result = blocked(&map, rpos, moves[0]);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    #[allow(clippy::bool_assert_comparison)] // More idiomatic in this case
+    fn test_check_blocked_above1() {
+        let input = r"
+##############
+##......##..##
+##..........##
+##....[][]@.##
+##....[]....##
+##..........##
+##############
+
+^
+        ";
+        let map = get_map(input);
+        let moves = get_moves(input);
+        let rpos = robot_position(&map);
+
+        let result = blocked(&map, rpos, moves[0]);
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    #[allow(clippy::bool_assert_comparison)] // More idiomatic in this case
+    fn test_check_blocked_above2() {
+        let input = r"
+##############
+##......##..##
+##.......[].##
+##....[][]@.##
+##....[]....##
+##..........##
+##############
+
+^
+        ";
+        let map = get_map(input);
+        let moves = get_moves(input);
+        let rpos = robot_position(&map);
+
+        let result = blocked(&map, rpos, moves[0]);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    #[allow(clippy::bool_assert_comparison)] // More idiomatic in this case
+    fn test_check_blocked_above3() {
+        let input = r"
+##############
+##......#...##
+##.......[].##
+##....[][]@.##
+##....[]....##
+##..........##
+##############
+
+^
+        ";
+        let map = get_map(input);
+        let moves = get_moves(input);
+        let rpos = robot_position(&map);
+
+        let result = blocked(&map, rpos, moves[0]);
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    #[allow(clippy::bool_assert_comparison)] // More idiomatic in this case
+    fn test_check_blocked_above4() {
+        let input = r"
+##############
+##......[]..##
+##.......[].##
+##....[][]@.##
+##....[]....##
+##..........##
+##############
+
+^
+        ";
+        let map = get_map(input);
+        let moves = get_moves(input);
+        let rpos = robot_position(&map);
+
+        let result = blocked(&map, rpos, moves[0]);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    #[allow(clippy::bool_assert_comparison)] // More idiomatic in this case
+    fn test_check_blocked_above5() {
+        let input = r"
+##############
+##......[][]##
+##.......[].##
+##....[][]@.##
+##....[]....##
+##..........##
+##############
+
+^
+        ";
+        let map = get_map(input);
+        let moves = get_moves(input);
+        let rpos = robot_position(&map);
+
+        let result = blocked(&map, rpos, moves[0]);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    #[allow(clippy::bool_assert_comparison)] // More idiomatic in this case
+    fn test_check_blocked_above6() {
+        let input = r"
+##############
+##........[]##
+##.......[].##
+##....[][]@.##
+##....[]....##
+##..........##
+##############
+
+^
+        ";
+        let map = get_map(input);
+        let moves = get_moves(input);
+        let rpos = robot_position(&map);
+
+        let result = blocked(&map, rpos, moves[0]);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    #[allow(clippy::bool_assert_comparison)] // More idiomatic in this case
+    fn test_check_blocked_above7() {
+        let input = r"
+##############
+##......[]@.##
+##.......[].##
+##....[][]..##
+##....[]....##
+##..........##
+##############
+
+^
         ";
         let map = get_map(input);
         let moves = get_moves(input);
